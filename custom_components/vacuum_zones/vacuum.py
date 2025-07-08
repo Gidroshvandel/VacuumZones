@@ -69,17 +69,30 @@ class ZoneVacuum(StateVacuumEntity):
         self._attr_name = config.pop("name", name)
 
         # Transliterate and slugify for unique_id
-        short_entity_id = entity_id.split(".")[-1]
         ascii_name = translit(name)
-        slug = slugify(f"{short_entity_id}_zone_{ascii_name}")
+        slug = slugify(f"{entity_id}_zone_{ascii_name}")
         self._attr_unique_id = slug
 
         self.service_data: dict = config | {ATTR_ENTITY_ID: entity_id}
         self.queue = queue
 
+        # Device ID to group all zones under one device
+        self._device_id = slugify(f"vacuum_zones_{entity_id}")
+
     @property
     def vacuum_entity_id(self) -> str:
         return self.service_data[ATTR_ENTITY_ID]
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(VACUUM_DOMAIN, self._device_id)},
+            "name": f"Vacuum Zones ({self.vacuum_entity_id})",
+            "manufacturer": "Vacuum Zones",
+            "model": "Multi-room Cleaner",
+            "entry_type": "service",
+            "via_device": (VACUUM_DOMAIN, self.vacuum_entity_id),
+        }
 
     async def async_added_to_hass(self):
         # init start script
